@@ -15,7 +15,7 @@ from tests import MakeDist
 
 
 @pytest.fixture()
-def _force_pypi_index(mocker: MockerFixture) -> None:
+def _force_pypi_index(mocker: MockerFixture, _no_index: None) -> None:  # noqa: U101
     mocker.patch("pypi_changes._info.PYPI_INDEX", "")
     mocker.patch.dict(os.environ, {"PIP_INDEX_URL": "https://pypi.org/simple"})
 
@@ -36,6 +36,7 @@ def test_info_self(tmp_path: Path, option_simple: Options, make_dist: MakeDist) 
 
 
 @pytest.mark.usefixtures("_force_pypi_index")
+@pytest.mark.usefixtures("_no_proxy")
 def test_info_missing(tmp_path: Path, option_simple: Options, make_dist: MakeDist) -> None:
     dist = make_dist(tmp_path, "missing-package", "1.0.0")
     distributions = [dist]
@@ -52,6 +53,7 @@ def test_info_missing(tmp_path: Path, option_simple: Options, make_dist: MakeDis
     assert current <= last_release_at
 
 
+@pytest.mark.usefixtures("_no_proxy")
 def test_info_pypi_server_invalid_version(tmp_path: Path, option_simple: Options, make_dist: MakeDist) -> None:
     dist = make_dist(tmp_path, "pytz", "1.0")
 
@@ -61,6 +63,7 @@ def test_info_pypi_server_invalid_version(tmp_path: Path, option_simple: Options
     assert isinstance(packages, list)
     assert len(packages) == 1
     pkg = packages[0]
+    assert pkg.exc is None
     assert pkg.info is not None
     assert "2004b" in pkg.info["releases"]  # this is an invalid version
 
